@@ -1,0 +1,17 @@
+language: node_js
+node_js:
+- 10.12.0
+sudo: required
+dist: trusty
+services:
+- docker
+before_install:
+- docker pull minio/minio:latest
+install:
+- npm ci
+script:
+- npm run coverage
+deploy:
+  provider: npm
+  on:
+    tags: true

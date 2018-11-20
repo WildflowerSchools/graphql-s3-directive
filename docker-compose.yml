@@ -1,0 +1,28 @@
+version: '3.6'
+services:
+
+  minio:
+    image: "minio/minio:latest"
+    restart: always
+    command: "server /data"
+    ports:
+      - 9000:9000
+    environment:
+      MINIO_ACCESS_KEY: myaccesskey
+      MINIO_SECRET_KEY: mysecret
+
+  test-service:
+    build:
+      context: ./build
+      dockerfile: local/Dockerfile
+    depends_on:
+      - minio
+    environment:
+      ENV: local
+    ports:
+      - 4080:4000
+    command: "scripts/setup-and-startup.sh"
+    volumes:
+      - type: bind
+        source: ./
+        target: /app
