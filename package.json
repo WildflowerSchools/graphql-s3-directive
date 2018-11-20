@@ -1,0 +1,65 @@
+{
+    "name": "@wildflowerschools/graphql-s3-directive",
+    "version": "0.1.0",
+    "description": "Directives for GraphQL to seamlessly support storage and loading of files on S3 for inclusion in a graph.",
+    "main": "src/index.js",
+    "scripts": {
+        "test": "mocha src/**.spec.js --timeout 30000",
+        "coverage": "node_modules/.bin/nyc npm test",
+        "start": "node_modules/.bin/nodemon src/test-server.js"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "author": "optimuspaul",
+    "license": "MIT",
+    "dependencies": {
+        "aws-sdk": "^2.358.0",
+        "graphql": "^14.0.2",
+        "graphql-custom-types": "^1.4.0",
+        "graphql-directive": "^0.2.1",
+        "graphql-iso-date": "^3.6.1",
+        "graphql-tools": "^4.0.1",
+        "graphql-voyager": "^1.0.0-rc.26"
+    },
+    "devDependencies": {
+        "apollo": "^1.9.2",
+        "apollo-server": "^2.1.0",
+        "apollo-server-express": "^2.1.0",
+        "axios": "^0.18.0",
+        "body-parser": "^1.18.3",
+        "chai": "^4.2.0",
+        "debug": "^4.1.0",
+        "docker-run": "^3.1.0",
+        "express": "^4.16.4",
+        "graphql-request": "^1.8.2",
+        "mocha": "^5.2.0",
+        "nodemon": "^1.18.4",
+        "npm": "^6.4.1",
+        "nyc": "^13.1.0",
+        "request": "^2.88.0",
+        "wait-port": "^0.2.2"
+    },
+    "nyc": {
+        "check-coverage": true,
+        "per-file": true,
+        "lines": 70,
+        "statements": 70,
+        "functions": 50,
+        "branches": 20,
+        "include": [
+            "src/**/*.js"
+        ],
+        "exclude": [
+            "src/**/*.spec.js",
+            "src/schema/*.js",
+            "src/test*.js"
+        ],
+        "reporter": [
+            "lcov",
+            "text-summary"
+        ],
+        "cache": false,
+        "all": true
+    }
+}
