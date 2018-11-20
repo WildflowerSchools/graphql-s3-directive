@@ -6,15 +6,8 @@ const {server} = require("./testsupport")
 
 const uri = "http://localhost:4000/graphql"
 
-process.env.PGPASSWORD = "iamaninsecurepassword"
-process.env.PGUSER = "beehive_user"
-process.env.PGDATABASE = "beehive-tests-integrated"
-process.env.PGHOST = "localhost"
-process.env.PGPORT = "5432"
-
 
 var dbContainer
-
 
 
 before(async function() {
@@ -23,17 +16,25 @@ before(async function() {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    // do the deed, get postgreSQL running
+    // do the deed, get minio running
     dbContainer = await (async function() {
         console.log('starting minio')
         var child = run('minio/minio:latest', {
           remove: true,
           ports: {
             9000: 9000
-          }
+          },
+          argv: ["server", "/data"],
+          env: {
+            MINIO_ACCESS_KEY: "myaccesskey",
+            MINIO_SECRET_KEY: "mysecret",
+          },
         })
+        child.stdout.pipe(process.stdout)
+        child.stderr.pipe(process.stderr)
         // wait a bit for minio to start up
-        await sleep(5000)
+        await sleep(3000)
+        return child
     })()
 
 })
@@ -46,7 +47,7 @@ after(async function(){
 
 
 
-describe('Beehive test suite', function(){
+describe('graphql-s3-directive test suite', function(){
 
     const {s3} = require("./")
 
@@ -66,7 +67,7 @@ describe('Beehive test suite', function(){
         it('creates a file', async function() {
             var query = `
                     mutation {
-                      upload(thing: {name: "thing", file: {name: "file", data: "test-data 90120398520349582304952034958"}}) {
+                      upload(file: {name: "thing", file: {name: "file", data: "test-data 90120398520349582304952034958"}}) {
                         file_id
                         name
                         file {
@@ -81,9 +82,9 @@ describe('Beehive test suite', function(){
             var thing = await request(uri, query)
             console.log(thing)
             expect(thing).to.not.equal(null)
-            expect(thing.newThing.thing_id).to.not.equal(null)
-            expect(thing.newThing.name).to.equal("thing")
-            expect(thing.newThing.system.created).to.not.equal(null)
+            expect(thing.upload.file_id).to.not.equal(null)
+            expect(thing.upload.name).to.equal("thing")
+            expect(thing.upload.file.key).to.not.equal(null)
         })
 
     })

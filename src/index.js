@@ -13,7 +13,7 @@ let s3conf = {
 
 if (process.env.NODE_ENV != 'production') {
     // for testing and local
-    s3conf.endpoint = 'http://minio:9000'
+    s3conf.endpoint = 'http://localhost:9000'
     s3conf.s3ForcePathStyle = true
     s3conf.accessKeyId = 'myaccesskey'
     s3conf.secretAccessKey = 'mysecret'
