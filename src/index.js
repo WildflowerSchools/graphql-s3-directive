@@ -1,7 +1,8 @@
 const {SchemaDirectiveVisitor} = require('graphql-tools')
 const graphql = require('graphql')
 const AWS = require('aws-sdk')
-
+const uuidv4 = require('uuid/v4')
+// var crypto = require("crypto");
 
 const defaultBucketName = process.env.AWS_BUCKET ? process.env.AWS_BUCKET : "unit-test-bucket"
 const defaultAWSRegion = process.env.AWS_REGION ? process.env.AWS_REGION : "us-east-1"
@@ -14,14 +15,32 @@ let s3conf = {
 if (process.env.NODE_ENV != 'production') {
     // for testing and local
     s3conf.endpoint = 'http://localhost:9000'
-    s3conf.s3ForcePathStyle = true
     s3conf.accessKeyId = 'myaccesskey'
     s3conf.secretAccessKey = 'mysecret'
+    s3conf.s3ForcePathStyle = true
     s3conf.sslEnabled = false
     s3conf.signatureVersion = 'v4'
     s3conf.region = 'us-east-1'
     s3conf.logger = console
 }
+
+if (process.env.AWS_S3_ENDPOINT) s3conf.endpoint = process.env.AWS_S3_ENDPOINT
+if (process.env.AWS_ACCESS_KEY) s3conf.accessKeyId = process.env.AWS_ACCESS_KEY
+if (process.env.AWS_SECRET_KEY) s3conf.secretAccessKey = process.env.AWS_SECRET_KEY
+if (process.env.S3_MINIO) {
+    s3conf.s3ForcePathStyle = true
+    s3conf.sslEnabled = false
+    s3conf.signatureVersion = 'v4'
+    s3conf.region = 'us-east-1'
+    s3conf.logger = console
+}
+
+// function hashString(str) {
+//     var hasher = crypto.createHash('sha256');
+//     hasher.update(str);
+//     return hasher.digest("base64");
+// }
+
 
 const s3 = new AWS.S3(s3conf)
 
@@ -77,6 +96,7 @@ exports.resolvers = {
 
 
 exports.typeDefs = `
+    scalar Upload
     scalar Bytes
 
     directive @s3file (bucketName: String, keyPrefix: String, region: String) on FIELD_DEFINITION
@@ -85,7 +105,7 @@ exports.typeDefs = `
     input S3FileInput {
         name: String
         contentType: String
-        data: Bytes!
+        data: Upload!
     }
 
     type S3File {
@@ -93,6 +113,9 @@ exports.typeDefs = `
         bucketName: String!
         key: String!
         data: Bytes! @s3fileDirectBytes
+        filename: String
+        mime: String
+        encoding: String
         contentType: String!
         size: Int
         created: String!
@@ -126,7 +149,6 @@ class S3FileDirective extends SchemaDirectiveVisitor {
 class S3fileDirectBytesDirective extends SchemaDirectiveVisitor {
 
     visitFieldDefinition(field, details) {
-        const keyPrefix = this.args.keyPrefix
         const schema = this.schema
 
         field.resolve = async function (obj, args, context, info) {
@@ -147,20 +169,40 @@ exports.directives = {
 };
 
 
-exports.uploadToS3 = async function(obj_id, input, key_prefix, bucketName) {
+async function readAll(stream) {
+    return new Promise(function(resolve, reject) {
+        var bytes = ''
+        stream.on('data', (chunk) => {
+            bytes += chunk
+        })
+        stream.on('end', () => {
+            resolve(bytes)
+        })
+        stream.on('error', (err) => {
+            resolve(err)
+        })
+    })
+}
+
+
+exports.uploadToS3 = async function(input, key_prefix, bucketName) {
     // generate key from obj and input
-    const name = input.name ? input.name : "file.dat"
-    const s3_key = `${key_prefix}/${obj_id}/${name}`
+    const file = await input.data
+    const name = input.name ? input.name : (file.filename ? file.filename : "file.data")
+    const uuid = uuidv4()
+    const s3_key = `${key_prefix}/${uuid}/${name}`
     const contentType = input.contentType ? input.contentType : 'application/octet-stream'
+    const bytes = await readAll(file.stream)
     // send bytes to S3
     var params = {
-        Body: input.data,
+        Body: bytes,
         Bucket: bucketName,
         Key: s3_key,
         ContentType: contentType,
     }
     try {
-        await s3.putObject(params).promise()
+        let uploadResult = await s3.putObject(params).promise()
+        console.log(uploadResult)
     } catch(err) {
         console.log(err)
         throw Error(`could not write to s3 ${err}`)
@@ -172,11 +214,28 @@ exports.uploadToS3 = async function(obj_id, input, key_prefix, bucketName) {
         name: name,
         key: s3_key,
         contentType: contentType,
-        size: 0,
+        size: bytes.length,
+        filename: file.filename,
+        mime: file.mimetype,
+        encoding: file.encoding,
         created: now(),
     }
 }
 
+exports.processS3Files = async function(input, fileFieldNames, target_type_name, schema) {
+    console.log("---------------------------------------------")
+    console.log("processing S3 files for upload")
+    console.log("---------------------------------------------")
+    for(var prop of fileFieldNames) {
+        var s3Info = schema._s3Info[`${target_type_name}:${prop}`]
+        var file = input[prop]
+        console.log(file)
+        console.log("---")
+        input[prop] = await exports.uploadToS3(file, s3Info.keyPrefix, s3Info.bucketName)
+    }
+    console.log("---------------------------------------------")
+    console.log("---------------------------------------------")
+}
 
 exports.loadFromS3 = async function(bucket, key) {
     try {
@@ -188,6 +247,6 @@ exports.loadFromS3 = async function(bucket, key) {
         return obj.Body.toString('utf-8')
     } catch(err) {
         console.log(err)
-        throw Error(`could not write to s3 ({err.message})`)
+        throw Error(`could not read from s3 (${err.message})`)
     }
 }
