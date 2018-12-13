@@ -56,7 +56,7 @@ exports.schema = makeExecutableSchema({
                 obj = {
                     file_id: uuidv4()
                 }
-                obj.file = await uploadToS3(obj.file_id, input.file, "test-objects", "unit-test-bucket-sir")
+                obj.file = await uploadToS3(input.file, "test-objects", "unit-test-bucket-sir")
                 obj.name = args.file.name
                 FILES[obj.file_id] = obj
                 return obj

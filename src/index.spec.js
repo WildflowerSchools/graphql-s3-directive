@@ -1,5 +1,5 @@
 const run = require('docker-run')
-const { request } = require('graphql-request')
+// const { request } = require('graphql-request')
 const expect = require('chai').expect
 const {server} = require("./testsupport")
 
@@ -65,9 +65,10 @@ describe('graphql-s3-directive test suite', function(){
 
     describe('files', function() {
         it('creates a file', async function() {
-            var query = `
-                    mutation {
-                      upload(file: {name: "thing", file: {name: "file", data: "test-data 90120398520349582304952034958"}}) {
+            const client = require('./client')
+            var mutation = `
+                    mutation ($file: Upload!) {
+                      upload(file: {name: "thing", file: {name: "file", data: $file}}) {
                         file_id
                         name
                         file {
@@ -79,7 +80,12 @@ describe('graphql-s3-directive test suite', function(){
                       }
                     }
                 `
-            var thing = await request(uri, query)
+            var file = {
+                path: "./README.md",
+                filename: "README.md",
+                varpath: "variables.file",
+            }
+            var thing = await client.multipartMutation(uri, file, mutation, {file: null})
             console.log(thing)
             expect(thing).to.not.equal(null)
             expect(thing.upload.file_id).to.not.equal(null)
@@ -90,10 +96,3 @@ describe('graphql-s3-directive test suite', function(){
     })
 
 })
-
-
-
-
-
-
-

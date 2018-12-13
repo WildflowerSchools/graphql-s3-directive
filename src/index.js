@@ -63,41 +63,41 @@ exports.ensureBucketsExist = async function(schema) {
 }
 
 
-class BytesScalar extends graphql.GraphQLScalarType {
+// class BytesScalar extends graphql.GraphQLScalarType {
 
-    serialize(value) {
-        if (value instanceof String) {
-            return value
-        } else if(value instanceof Buffer) {
-            return value.toString('utf-8')
-        }
-    }
+//     serialize(value) {
+//         if (value instanceof String) {
+//             return value
+//         } else if(value instanceof Buffer) {
+//             return value.toString('utf-8')
+//         }
+//     }
 
-    parseValue(value) {
-        if (!(typeof value === 'string' || value instanceof String)) {
-            throw new TypeError('Bytes cannot represent non string type ' + JSON.stringify(value));
-        }
-        return value
-    }
+//     parseValue(value) {
+//         if (!(typeof value === 'string' || value instanceof String)) {
+//             throw new TypeError('Bytes cannot represent non string type ' + JSON.stringify(value));
+//         }
+//         return value
+//     }
 
-    parseLiteral(ast) {
-        if (ast.kind !== graphql.Kind.STRING) {
-            throw new TypeError('Bytes cannot represent non string type ' + String(ast.value != null ? ast.value : null));
-        }
-        return ast.value
-    }
+//     parseLiteral(ast) {
+//         if (ast.kind !== graphql.Kind.STRING) {
+//             throw new TypeError('Bytes cannot represent non string type ' + String(ast.value != null ? ast.value : null));
+//         }
+//         return ast.value
+//     }
 
-}
+// }
 
 
 exports.resolvers = {
-    Bytes: BytesScalar
+    // Bytes: BytesScalar
 }
 
 
 exports.typeDefs = `
     scalar Upload
-    scalar Bytes
+    # scalar Bytes
 
     directive @s3file (bucketName: String, keyPrefix: String, region: String) on FIELD_DEFINITION
     directive @s3fileDirectBytes on FIELD_DEFINITION
@@ -112,7 +112,7 @@ exports.typeDefs = `
         name: String
         bucketName: String!
         key: String!
-        data: Bytes! @s3fileDirectBytes
+        data: String! @s3fileDirectBytes
         filename: String
         mime: String
         encoding: String
@@ -186,8 +186,14 @@ async function readAll(stream) {
 
 
 exports.uploadToS3 = async function(input, key_prefix, bucketName) {
+    console.log("---------------------------------------------------")
+    console.log("===================================================")
+    console.log(input)
+    console.log(input.data)
     // generate key from obj and input
     const file = await input.data
+    console.log("===================================================")
+    console.log("---------------------------------------------------")
     const name = input.name ? input.name : (file.filename ? file.filename : "file.data")
     const uuid = uuidv4()
     const s3_key = `${key_prefix}/${uuid}/${name}`
@@ -223,18 +229,11 @@ exports.uploadToS3 = async function(input, key_prefix, bucketName) {
 }
 
 exports.processS3Files = async function(input, fileFieldNames, target_type_name, schema) {
-    console.log("---------------------------------------------")
-    console.log("processing S3 files for upload")
-    console.log("---------------------------------------------")
     for(var prop of fileFieldNames) {
         var s3Info = schema._s3Info[`${target_type_name}:${prop}`]
         var file = input[prop]
-        console.log(file)
-        console.log("---")
         input[prop] = await exports.uploadToS3(file, s3Info.keyPrefix, s3Info.bucketName)
     }
-    console.log("---------------------------------------------")
-    console.log("---------------------------------------------")
 }
 
 exports.loadFromS3 = async function(bucket, key) {
