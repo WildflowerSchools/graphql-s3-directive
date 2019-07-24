@@ -169,27 +169,11 @@ exports.directives = {
 };
 
 
-async function readAll(stream) {
-    return new Promise(function(resolve, reject) {
-        var bytes = ''
-        stream.on('data', (chunk) => {
-            bytes += chunk
-        })
-        stream.on('end', () => {
-            resolve(bytes)
-        })
-        stream.on('error', (err) => {
-            resolve(err)
-        })
-    })
-}
-
-
 exports.uploadToS3 = async function(input, key_prefix, bucketName) {
     console.log("---------------------------------------------------")
     console.log("===================================================")
-    console.log(input)
-    console.log(input.data)
+    console.log(input.name)
+    console.log(input.contentType)
     // generate key from obj and input
     const file = await input.data
     console.log("===================================================")
@@ -198,29 +182,26 @@ exports.uploadToS3 = async function(input, key_prefix, bucketName) {
     const uuid = uuidv4()
     const s3_key = `${key_prefix}/${uuid}/${name}`
     const contentType = input.contentType ? input.contentType : 'application/octet-stream'
-    const bytes = await readAll(file.stream)
-    // send bytes to S3
+    const size = file.stream._readableState.length
     var params = {
-        Body: bytes,
+        Body: file.stream,
         Bucket: bucketName,
         Key: s3_key,
         ContentType: contentType,
     }
     try {
-        let uploadResult = await s3.putObject(params).promise()
-        console.log(uploadResult)
+        let uploadResult = await s3.upload(params).promise()
     } catch(err) {
-        console.log(err)
-        throw Error(`could not write to s3 ${err}`)
+        throw Error(`could not write to s3 ${err.message}`)
     }
-
+    console.log(file.stream)
     // return the reference object for relational storage
     return {
         bucketName: bucketName,
         name: name,
         key: s3_key,
         contentType: contentType,
-        size: bytes.length,
+        size: size,
         filename: file.filename,
         mime: file.mimetype,
         encoding: file.encoding,
@@ -245,7 +226,6 @@ exports.loadFromS3 = async function(bucket, key) {
         var obj = await s3.getObject(params).promise()
         return obj.Body.toString('utf-8')
     } catch(err) {
-        console.log(err)
         throw Error(`could not read from s3 (${err.message})`)
     }
 }
