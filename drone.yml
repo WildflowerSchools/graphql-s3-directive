@@ -8,7 +8,7 @@ metadata:
 
 steps:
 - name: tests/coverage
-  image: node:12.13.0
+  image: node:18-alpine
   environment:
     DRONE: "true"
     BEEHIVE_MOCK_STREAM: "yes"

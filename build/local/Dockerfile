@@ -1,4 +1,3 @@
-FROM node:9.2.0-alpine
+FROM node:18-alpine
 
 WORKDIR /app
-
