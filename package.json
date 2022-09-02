@@ -1,6 +1,6 @@
 {
     "name": "@wildflowerschools/graphql-s3-directive",
-    "version": "0.3.1",
+    "version": "1.0.0",
     "description": "Directives for GraphQL to seamlessly support storage and loading of files on S3 for inclusion in a graph.",
     "main": "src/index.js",
     "scripts": {
@@ -14,33 +14,19 @@
     "author": "optimuspaul",
     "license": "MIT",
     "dependencies": {
-        "aws-sdk": "^2.358.0",
-        "graphql": "^14.0.2",
-        "graphql-custom-types": "^1.4.0",
-        "graphql-directive": "^0.2.1",
-        "graphql-iso-date": "^3.6.1",
-        "graphql-tools": "^4.0.1",
-        "graphql-voyager": "^1.0.0-rc.26"
+        "aws-sdk": "~2.1208",
+        "graphql-scalars": "~1.18.0",
+        "graphql-tools": "~8.3"
     },
     "devDependencies": {
-        "apollo": "^1.9.2",
-        "apollo-server": "^2.1.0",
-        "apollo-server-express": "^2.1.0",
-        "apollo-upload-client": "^9.1.0",
-        "axios": "^0.18.0",
-        "body-parser": "^1.18.3",
-        "chai": "^4.2.0",
-        "debug": "^4.1.0",
-        "docker-run": "^3.1.0",
-        "event-stream": "^4.0.1",
-        "express": "^4.16.4",
-        "graphql-request": "^1.8.2",
-        "mocha": "^5.2.0",
-        "nodemon": "^1.18.4",
-        "npm": "^6.4.1",
-        "nyc": "^13.1.0",
-        "request": "^2.88.0",
-        "wait-port": "^0.2.2"
+        "apollo": "^2.0",
+        "apollo-server-express": "~3.0",
+        "chai": "~4.3",
+        "docker-run": "~3.1.0",
+        "express": "~4.18",
+        "graphql-request": "~5.0",
+        "mocha": "~10",
+        "nyc": "~15.1.0"
     },
     "nyc": {
         "check-coverage": true,
@@ -63,5 +49,8 @@
         ],
         "cache": false,
         "all": true
+    },
+    "peerDependencies": {
+        "graphql": "~15.3.0"
     }
 }
